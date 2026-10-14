@@ -1,69 +1,277 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Razorpay Test Mode Demo</title>
-  <style>
-    body { font-family: Arial, sans-serif; max-width: 420px; margin: 60px auto; padding: 0 16px; }
-    input, button { width: 100%; padding: 10px; margin-top: 10px; font-size: 16px; box-sizing: border-box; }
-    button { cursor: pointer; }
-    #result { margin-top: 20px; padding: 10px; border-radius: 6px; display: none; }
-    .ok { background: #e6f4ea; } .fail { background: #fdecea; }
-  </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Razorpay Test Mode Console</title>
+<style>
+  :root{
+    --bg:#0b1220; --panel:#111a2e; --panel2:#16213a; --line:#243252;
+    --text:#e6ecf8; --muted:#8fa0c2; --primary:#3b82f6; --primary2:#2563eb;
+    --ok:#22c55e; --warn:#f59e0b; --bad:#ef4444; --info:#38bdf8;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--text);
+       font-family:"Segoe UI",Roboto,Arial,sans-serif;font-size:14px}
+  header{display:flex;align-items:center;justify-content:space-between;
+         padding:14px 24px;border-bottom:1px solid var(--line);background:var(--panel)}
+  .brand{font-weight:700;font-size:17px}
+  .badge{background:rgba(245,158,11,.15);color:var(--warn);border:1px solid rgba(245,158,11,.4);
+         padding:3px 10px;border-radius:999px;font-size:11px;letter-spacing:.6px;margin-left:10px}
+  nav button{background:transparent;border:0;color:var(--muted);padding:8px 16px;
+             font-size:14px;cursor:pointer;border-radius:8px}
+  nav button.active{background:var(--panel2);color:var(--text)}
+  main{max-width:1100px;margin:24px auto;padding:0 20px}
+  .view{display:none}.view.active{display:block}
+
+  .grid4{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:14px;margin-bottom:18px}
+  .stat{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:16px}
+  .stat .k{color:var(--muted);font-size:12px;text-transform:uppercase;letter-spacing:.6px}
+  .stat .v{font-size:26px;font-weight:700;margin-top:6px}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:18px;margin-bottom:18px}
+  .card h3{margin:0 0 12px;font-size:15px}
+  .two{display:grid;grid-template-columns:1.6fr 1fr;gap:18px}
+  @media(max-width:860px){.two{grid-template-columns:1fr}}
+
+  table{width:100%;border-collapse:collapse}
+  th{color:var(--muted);font-weight:600;font-size:12px;text-align:left;padding:8px 6px;border-bottom:1px solid var(--line)}
+  td{padding:10px 6px;border-bottom:1px solid var(--line);vertical-align:middle}
+  tr:last-child td{border-bottom:0}
+  .mono{font-family:Consolas,monospace;font-size:12px;color:var(--muted)}
+  .pill{display:inline-block;padding:2px 10px;border-radius:999px;font-size:12px;font-weight:600}
+  .p-captured,.p-paid{background:rgba(34,197,94,.15);color:var(--ok)}
+  .p-failed{background:rgba(239,68,68,.15);color:var(--bad)}
+  .p-refunded{background:rgba(56,189,248,.15);color:var(--info)}
+  .p-authorized,.p-created,.p-attempted{background:rgba(245,158,11,.15);color:var(--warn)}
+  .tick{color:var(--ok)} .cross{color:var(--muted)}
+  .btn{background:var(--primary);color:#fff;border:0;border-radius:8px;padding:7px 14px;cursor:pointer;font-size:13px}
+  .btn:hover{background:var(--primary2)} .btn:disabled{opacity:.5;cursor:not-allowed}
+  .btn.ghost{background:transparent;border:1px solid var(--line);color:var(--text)}
+  .empty{color:var(--muted);padding:14px 0}
+
+  .timeline{list-style:none;margin:0;padding:0;max-height:420px;overflow:auto}
+  .timeline li{border-left:2px solid var(--line);padding:0 0 14px 14px;margin-left:6px;position:relative;cursor:pointer}
+  .timeline li:before{content:"";position:absolute;left:-6px;top:3px;width:10px;height:10px;border-radius:50%;background:var(--primary)}
+  .timeline .ev{font-weight:600} .timeline .meta{color:var(--muted);font-size:12px}
+  pre{background:#0a1020;border:1px solid var(--line);border-radius:8px;padding:10px;
+      max-height:220px;overflow:auto;font-size:12px;margin:8px 0 0;display:none}
+
+  /* checkout */
+  .checkout{max-width:440px;margin:0 auto}
+  .amount-box{display:flex;align-items:center;border:1.5px solid var(--line);border-radius:10px;padding:0 14px;background:var(--panel2);margin:8px 0}
+  .amount-box:focus-within{border-color:var(--primary)}
+  .amount-box span{font-size:22px;color:var(--muted);margin-right:6px}
+  .amount-box input{flex:1;background:transparent;border:0;outline:0;color:var(--text);font-size:26px;font-weight:600;padding:12px 0;width:100%}
+  .chips{display:flex;gap:8px;margin:6px 0 18px;flex-wrap:wrap}
+  .chip{background:var(--panel2);border:1px solid var(--line);color:var(--text);padding:6px 14px;border-radius:999px;cursor:pointer;font-size:13px}
+  .chip:hover{border-color:var(--primary)}
+  .pay{width:100%;padding:14px;font-size:16px;font-weight:600;border-radius:10px}
+  .hint{color:var(--muted);font-size:12px;margin-top:14px;line-height:1.6}
+  .hint code{background:var(--panel2);padding:1px 6px;border-radius:4px}
+
+  #toast{position:fixed;right:20px;bottom:20px;display:flex;flex-direction:column;gap:8px;z-index:50}
+  .t{padding:12px 16px;border-radius:10px;border:1px solid var(--line);background:var(--panel2);max-width:340px;
+     animation:in .2s ease}
+  .t.ok{border-color:var(--ok)} .t.bad{border-color:var(--bad)}
+  @keyframes in{from{transform:translateY(8px);opacity:0}to{transform:none;opacity:1}}
+
+  .modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.6);display:none;align-items:center;justify-content:center;z-index:40}
+  .modal{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:20px;width:320px}
+  .modal input{width:100%;margin:10px 0;padding:10px;border-radius:8px;border:1px solid var(--line);background:var(--panel2);color:var(--text);font-size:15px}
+  .row{display:flex;gap:8px;justify-content:flex-end}
+</style>
 </head>
 <body>
-  <h2>Razorpay Test Mode Demo</h2>
-  <label for="amount">Amount (INR)</label>
-  <input id="amount" type="number" min="1" value="100">
-  <button id="payBtn">Pay</button>
-  <div id="result"></div>
+<header>
+  <div class="brand">Razorpay Console<span class="badge">TEST MODE</span></div>
+  <nav>
+    <button class="active" data-view="checkout">Checkout</button>
+    <button data-view="dashboard">Dashboard</button>
+  </nav>
+</header>
 
-  <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
-  <script>
-    const keyId = "{{ key_id }}";
-    const resultEl = document.getElementById("result");
+<main>
+  <!-- CHECKOUT -->
+  <section id="checkout" class="view active">
+    <div class="checkout card">
+      <h3>Make a test payment</h3>
+      <label for="amount" style="color:var(--muted);font-size:13px">Amount</label>
+      <div class="amount-box"><span>&#8377;</span><input id="amount" type="number" min="1" value="100"></div>
+      <div class="chips">
+        <button class="chip" data-amt="100">&#8377;100</button>
+        <button class="chip" data-amt="500">&#8377;500</button>
+        <button class="chip" data-amt="1000">&#8377;1000</button>
+        <button class="chip" data-amt="2500">&#8377;2500</button>
+      </div>
+      <button id="payBtn" class="btn pay">Pay now</button>
+      <div class="hint">
+        Test UPI: <code>success@razorpay</code> / <code>failure@razorpay</code><br>
+        Use a domestic test card if the standard card is declined as international.
+      </div>
+    </div>
+  </section>
 
-    function show(msg, ok) {
-      resultEl.style.display = "block";
-      resultEl.className = ok ? "ok" : "fail";
-      resultEl.textContent = msg;
-    }
+  <!-- DASHBOARD -->
+  <section id="dashboard" class="view">
+    <div class="grid4">
+      <div class="stat"><div class="k">Collected</div><div class="v" id="s-collected">-</div></div>
+      <div class="stat"><div class="k">Payments</div><div class="v" id="s-total">-</div></div>
+      <div class="stat"><div class="k">Success rate</div><div class="v" id="s-rate">-</div></div>
+      <div class="stat"><div class="k">Refunded</div><div class="v" id="s-refunded">-</div></div>
+    </div>
+    <div class="two">
+      <div class="card">
+        <h3>Payments</h3>
+        <div style="overflow-x:auto">
+          <table>
+            <thead><tr><th>Payment</th><th>Amount</th><th>Method</th><th>Status</th><th>Verified</th><th></th></tr></thead>
+            <tbody id="payments"><tr><td colspan="6" class="empty">No payments yet.</td></tr></tbody>
+          </table>
+        </div>
+      </div>
+      <div class="card">
+        <h3>Webhook events</h3>
+        <ul class="timeline" id="events"><li class="empty">No events yet.</li></ul>
+      </div>
+    </div>
+  </section>
+</main>
 
-    document.getElementById("payBtn").addEventListener("click", async () => {
-      const amount = document.getElementById("amount").value;
-      const res = await fetch("/create-order", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ amount })
-      });
-      const order = await res.json();
-      if (!res.ok) { show(order.error || "Could not create order", false); return; }
+<div id="toast"></div>
 
-      const options = {
-        key: keyId,
-        amount: order.amount,
-        currency: order.currency,
-        name: "Test Store",
-        description: "Test transaction",
-        order_id: order.order_id,
-        handler: async function (response) {
-          const v = await fetch("/verify-payment", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(response)
-          });
-          const out = await v.json();
-          show(v.ok ? "Payment verified: " + out.payment_id
-                    : "Verification failed: " + out.error, v.ok);
-        }
-      };
-      const rzp = new Razorpay(options);
-      rzp.on("payment.failed", function (resp) {
-        show("Payment failed: " + resp.error.description, false);
-      });
-      rzp.open();
+<div class="modal-bg" id="refundModal">
+  <div class="modal">
+    <h3 style="margin:0">Refund payment</h3>
+    <div class="mono" id="refundId"></div>
+    <input id="refundAmt" type="number" min="1" placeholder="Amount in INR (blank = full refund)">
+    <div class="row">
+      <button class="btn ghost" id="refundCancel">Cancel</button>
+      <button class="btn" id="refundConfirm">Refund</button>
+    </div>
+  </div>
+</div>
+
+<script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+<script>
+const keyId = "{{ key_id }}";
+const $ = (id) => document.getElementById(id);
+const esc = (s) => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const rupees = (p) => "\u20B9" + ((p || 0) / 100).toLocaleString("en-IN", {maximumFractionDigits: 2});
+
+function toast(msg, ok) {
+  const d = document.createElement("div");
+  d.className = "t " + (ok ? "ok" : "bad");
+  d.textContent = msg;
+  $("toast").appendChild(d);
+  setTimeout(() => d.remove(), 5000);
+}
+
+/* navigation */
+document.querySelectorAll("nav button").forEach(b => b.addEventListener("click", () => {
+  document.querySelectorAll("nav button").forEach(x => x.classList.remove("active"));
+  document.querySelectorAll(".view").forEach(x => x.classList.remove("active"));
+  b.classList.add("active");
+  $(b.dataset.view).classList.add("active");
+  if (b.dataset.view === "dashboard") refresh();
+}));
+
+/* checkout */
+document.querySelectorAll(".chip").forEach(c => c.addEventListener("click", () => $("amount").value = c.dataset.amt));
+
+$("payBtn").addEventListener("click", async () => {
+  $("payBtn").disabled = true;
+  try {
+    const res = await fetch("/create-order", {method: "POST", headers: {"Content-Type": "application/json"},
+                                               body: JSON.stringify({amount: $("amount").value})});
+    const order = await res.json();
+    if (!res.ok) { toast(order.error || "Could not create order", false); $("payBtn").disabled = false; return; }
+
+    const rzp = new Razorpay({
+      key: keyId, amount: order.amount, currency: order.currency, order_id: order.order_id,
+      name: "Test Store", description: "Test transaction", theme: {color: "#3b82f6"},
+      modal: {ondismiss: () => $("payBtn").disabled = false},
+      handler: async (response) => {
+        const v = await fetch("/verify-payment", {method: "POST", headers: {"Content-Type": "application/json"},
+                                                   body: JSON.stringify(response)});
+        const out = await v.json();
+        toast(v.ok ? "Payment verified: " + out.payment_id : "Verification failed: " + out.error, v.ok);
+        $("payBtn").disabled = false;
+      }
     });
-  </script>
+    rzp.on("payment.failed", async (resp) => {
+      const e = resp.error || {};
+      toast("Payment failed: " + (e.description || "unknown error"), false);
+      if (e.metadata && e.metadata.payment_id) {
+        fetch("/payment-failed", {method: "POST", headers: {"Content-Type": "application/json"},
+          body: JSON.stringify({payment_id: e.metadata.payment_id, order_id: e.metadata.order_id, description: e.description})});
+      }
+      $("payBtn").disabled = false;
+    });
+    rzp.open();
+  } catch (err) { toast("Something went wrong: " + err.message, false); $("payBtn").disabled = false; }
+});
+
+/* dashboard */
+function renderStats(s) {
+  $("s-collected").textContent = rupees(s.collected);
+  $("s-total").textContent = s.total;
+  $("s-rate").textContent = s.success_rate + "%";
+  $("s-refunded").textContent = rupees(s.refunded);
+}
+
+function renderPayments(list) {
+  if (!list.length) { $("payments").innerHTML = '<tr><td colspan="6" class="empty">No payments yet.</td></tr>'; return; }
+  $("payments").innerHTML = list.map(p => {
+    const canRefund = p.status === "captured" && (p.amount - p.refunded_amount) > 0;
+    return `<tr>
+      <td><div class="mono">${esc(p.payment_id)}</div><div class="mono">${esc(p.order_id)}</div></td>
+      <td>${rupees(p.amount)}${p.refunded_amount ? `<div class="mono">refunded ${rupees(p.refunded_amount)}</div>` : ""}</td>
+      <td>${esc(p.method || "-")}</td>
+      <td><span class="pill p-${esc(p.status)}">${esc(p.status || "-")}</span>${p.error ? `<div class="mono">${esc(p.error)}</div>` : ""}</td>
+      <td>${p.verified ? '<span class="tick">&#10003;</span>' : '<span class="cross">-</span>'}</td>
+      <td>${canRefund ? `<button class="btn ghost" data-refund="${esc(p.payment_id)}">Refund</button>` : ""}</td>
+    </tr>`;
+  }).join("");
+  document.querySelectorAll("[data-refund]").forEach(b => b.addEventListener("click", () => openRefund(b.dataset.refund)));
+}
+
+function renderEvents(list) {
+  if (!list.length) { $("events").innerHTML = '<li class="empty">No events yet.</li>'; return; }
+  $("events").innerHTML = list.map((e, i) => {
+    let pretty = e.payload;
+    try { pretty = JSON.stringify(JSON.parse(e.payload), null, 2); } catch (x) {}
+    return `<li onclick="document.getElementById('pl${i}').style.display = document.getElementById('pl${i}').style.display === 'block' ? 'none' : 'block'">
+      <div class="ev">${esc(e.event)} <span class="pill p-${esc(e.status)}">${esc(e.status || "")}</span></div>
+      <div class="meta">${esc(e.entity_id)} &middot; ${new Date(e.received_at).toLocaleTimeString()}</div>
+      <pre id="pl${i}">${esc(pretty)}</pre></li>`;
+  }).join("");
+}
+
+async function refresh() {
+  try {
+    const [s, p, e] = await Promise.all([
+      fetch("/api/stats").then(r => r.json()),
+      fetch("/api/payments").then(r => r.json()),
+      fetch("/api/events").then(r => r.json())
+    ]);
+    renderStats(s); renderPayments(p); renderEvents(e);
+  } catch (err) { /* ignore network blips */ }
+}
+setInterval(() => { if ($("dashboard").classList.contains("active") && !document.querySelector("pre[style*='block']")) refresh(); }, 5000);
+
+/* refunds */
+let refundTarget = null;
+function openRefund(id) { refundTarget = id; $("refundId").textContent = id; $("refundAmt").value = ""; $("refundModal").style.display = "flex"; }
+$("refundCancel").addEventListener("click", () => $("refundModal").style.display = "none");
+$("refundConfirm").addEventListener("click", async () => {
+  const amount = $("refundAmt").value;
+  const res = await fetch("/refund/" + refundTarget, {method: "POST", headers: {"Content-Type": "application/json"},
+                                                      body: JSON.stringify(amount ? {amount} : {})});
+  const out = await res.json();
+  toast(res.ok ? "Refund created: " + out.refund_id : (out.error || "Refund failed"), res.ok);
+  $("refundModal").style.display = "none";
+  refresh();
+});
+</script>
 </body>
 </html>
